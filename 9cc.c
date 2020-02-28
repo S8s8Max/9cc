@@ -38,9 +38,8 @@ void error(char *fmt, ...) {
 //次のトークンが期待している記号のとき、トークンを1つ読み
 //真を返す。それ以外の場合には偽を返す。
 bool consume(char op) {
-  if (token->kind != TK_RESERVED || token->str[0] != op){
+  if (token->kind != TK_RESERVED || token->str[0] != op)
     return false;
-  }
   token = token->next;
   return true;
 }
@@ -48,18 +47,16 @@ bool consume(char op) {
 //次のトークンが期待している記号のとき、トークンを1つ読み
 //それ以外の場合にはエラーを報告する。
 void expect(char op) {
-  if (token->kind != TK_RESERVED || token->str[0] != op){
+  if (token->kind != TK_RESERVED || token->str[0] != op)
     error("'%c'ではありません", op);
-  }
   token = token->next;
 }
 
 //次のトークンが数値の場合、トークンを1つ読んでその値を返す
 //それ以外の場合にはエラーを報告。
 int expect_number() {
-  if (token->kind != TK_NUM){
+  if (token->kind != TK_NUM)
     error("数ではありません");
-  }
   int val = token->val;
   token = token->next;
   return val;
@@ -92,7 +89,7 @@ Token *tokenize(char *p) {
     }
     
     if (*p == '+' || *p == '-') {
-      cur == new_token(TK_RESERVED, cur, p++);
+      cur = new_token(TK_RESERVED, cur, p++);
       continue;
     }
     
