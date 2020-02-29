@@ -63,7 +63,7 @@ bool consume(char *op) {
 
 //次のトークンが期待している記号のとき、トークンを1つ読み
 //それ以外の場合にはエラーを報告する。
-void expect(char op) {
+void expect(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str, op, token->len))
     error_at(token->str, "expected \"%s\"", op);
   token = token->next;
@@ -93,12 +93,12 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   return tok;
 }
 
-bool startwith(char *p, char *q) {
+bool startswith(char *p, char *q) {
   return memcmp(p, q, strlen(q)) == 0;
 }
 
 //入力文字列ｐをトークナイズしてそれを返す
-Token *tokenize(char *p) {
+Token *tokenize() {
   char *p = user_input;
   Token head;
   head.next = NULL;
@@ -112,7 +112,7 @@ Token *tokenize(char *p) {
     }
     
     //Multi-letter punctuator
-    if (startwith(p, "==") || startwith(p, "!=") || startwith(p, "<=") || startwith(p, ">=")) {
+    if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") || startswith(p, ">=")) {
       cur = new_token(TK_RESERVED, cur, p, 2);
       p += 2;
       continue;
@@ -200,9 +200,9 @@ Node *equality() {
   Node *node = relational();
 
   for (;;) {
-    if (consume('=='))
+    if (consume("=="))
       node = new_binary(ND_EQ, node, relational());
-    else if (consume('!='))
+    else if (consume("!="))
       node = new_binary(ND_NE, node, relational());
     else
       return node;
@@ -214,11 +214,11 @@ Node *relational() {
   Node *node = add();
 
   for (;;) {
-    if (consume('<'))
+    if (consume("<"))
       node = new_binary(ND_LT, node, add());
-    else if (consume('<='))
+    else if (consume("<="))
       node = new_binary(ND_LE, node, add());
-    else if (consume('>'))
+    else if (consume(">"))
       node = new_binary(ND_LT, add(), node);
     else if (consume(">="))
       node = new_binary(ND_LE, add(), node);
@@ -267,7 +267,7 @@ Node *unary() {
 //primary = "(" expr ")" | num
 Node *primary() {
   //次のトークンが"("なら、"(" expr ")"のはず
-  if (consume("(") {
+  if (consume("(")) {
     Node *node = expr();
     expect(")");
     return node;
