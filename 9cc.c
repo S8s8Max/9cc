@@ -12,9 +12,8 @@ typedef enum {
   TK_EOF, //入力の終わりを表す
 } TokenKind;
 
-typedef struct Token Token;
-
 //トークンの型
+typedef struct Token Token;
 struct Token {
   TokenKind kind; //トークンの型
   Token *next; //次の入力のトークン
@@ -22,37 +21,23 @@ struct Token {
   char *str; //トークン文字列
 };
 
-//現在着目しているトークン
-Token *token;
-
-//抽象構文木のノードの種類
-typedef enum {
-  ND_ADD, // +
-  ND_SUB, // -
-  ND_MUL, // *
-  ND_DIV, // /
-  ND_NUM, // 整数
-} NodeKind;
-
-typedef struct Node Node;
-
-//抽象構文木のノードの型
-struct Node {
-  NodeKind kind; //ノードの型
-  Node *lhs;     //左辺
-  Node *rhs;     //右辺
-  int val;       //kindがND_NUMの場合のみ使う
-};
-
-
-//エラーを報告するための関数
-//printfと同じ引数をとる
-//2(注を書き直すときは右記のような数字を付与する)
-
 //入力プログラム
 char *user_input;
 
-//2エラー箇所を報告する
+//現在着目しているトークン
+Token *token;
+
+//エラーを報告する
+void error(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}
+
+//エラーを報告するための関数
+//printfと同じ引数をとる
 void error_at(char *loc, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
@@ -119,7 +104,7 @@ Token *tokenize(char *p) {
       continue;
     }
     
-    if (*p == '+' || *p == '-') {
+    if (strchr("+-*/()", *p)) {
       cur = new_token(TK_RESERVED, cur, p++);
       continue;
     }
@@ -130,28 +115,54 @@ Token *tokenize(char *p) {
       continue;
     }
     
-    error("トークナイズできません");
+    error_at(p, "トークナイズできません");
   }
   
   new_token(TK_EOF, cur, p);
   return head.next;
 }
 
+//抽象構文木のノードの種類
+typedef enum {
+  ND_ADD, // +
+  ND_SUB, // -
+  ND_MUL, // *
+  ND_DIV, // /
+  ND_NUM, // 整数
+} NodeKind;
 
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+//抽象構文木のノードの型
+typedef struct Node Node;
+struct Node {
+  NodeKind kind; //ノードの型
+  Node *lhs;     //左辺
+  Node *rhs;     //右辺
+  int val;       //kindがND_NUMの場合のみ使う
+};
+
+
+Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
+  return node;
+}
+
+Node *new_binary(NodeKind kind, Node *lhs, Node *rhs) {
+  Node *node = new_node(kind);
   node->lhs = lhs;
   node->rhs = rhs;
   return node;
 }
 
-Node *new_node_num(int val) {
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_NUM;
+Node *new_num(int val) {
+  Node *node = new_node(ND_NUM);
   node->val = val;
   return node;
 }
+
+Node *expr();
+Node *mul();
+Node *primary();
 
 //パーサ
 Node *expr() {
@@ -159,9 +170,9 @@ Node *expr() {
 
   for (;;) {
     if (consume('+'))
-      node = new_node(ND_ADD, node, mul());
+      node = new_binary(ND_ADD, node, mul());
     else if (consume('-'))
-      node = new_node(ND_SUB, node, mul());
+      node = new_binary(ND_SUB, node, mul());
     else
       return node;
   }
@@ -172,9 +183,9 @@ Node *mul() {
 
   for (;;) {
     if (consume('*'))
-      node = new_code(ND_MUL, node, primary());
+      node = new_binary(ND_MUL, node, primary());
     else if (consume('/'))
-      node = new_node(ND_DIV, node, primary());
+      node = new_binary(ND_DIV, node, primary());
     else
       return node;
   }
@@ -189,7 +200,7 @@ Node *primary() {
   }
 
   //そうで無ければ数値のはず
-  return new_node_num(expect_number());
+  return new_num(expect_number());
 }
 
 void gen(Node *node) {
@@ -224,10 +235,8 @@ void gen(Node *node) {
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
-    error("引数の個数が正しくありません");
-    return 1;
-  }
+  if (argc != 2)
+    error("%s: 引数の個数が正しくありません", argv[0]);
   
   //2トークナイズしてパース
   user_input = argv[1];
