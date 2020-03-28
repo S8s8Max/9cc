@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -9,7 +10,7 @@
 // tokenize.c
 //
 
-//トークンの種類
+// Token
 typedef enum {
   TK_RESERVED, //記号
   TK_IDENT, //識別子
@@ -17,7 +18,7 @@ typedef enum {
   TK_EOF, //入力の終わりを表す
 } TokenKind;
 
-//トークンの型
+//Kinds of Token
 typedef struct Token Token;
 struct Token {
   TokenKind kind; //トークンの型
@@ -44,6 +45,13 @@ extern Token *token;
 // parse.c
 //
 
+typedef struct Var Var;
+struct Var {
+  Var *next;
+  char *name; // variable name
+  int offset; // Offset from RBP
+};
+
 typedef enum {
   ND_ADD, // +
   ND_SUB, // -
@@ -67,14 +75,21 @@ struct Node {
   Node *next;    //Next node
   Node *lhs;     //Left side
   Node *rhs;     //Right side
-  char name;    //Used if kind == ND_VAR
+  Var *var;    //Used if kind == ND_VAR
   long val;       //Used if kind == ND_NUM
 };
 
-Node *program(void);
+typedef struct Function Function;
+struct Function {
+  Node *node;
+  Var *locals;
+  int stack_size;
+};
+
+Function *program(void);
 
 //
 // codegen.c
 //
 
-void codegen(Node *node);
+void codegen(Function *prog);

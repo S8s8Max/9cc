@@ -110,11 +110,14 @@ Token *tokenize(void) {
     }
 
     //Identifier
-    if ('a' <= *p && *p <= 'z') {
-      cur = new_token(TK_RESERVED, cur, p++, 1);
+    if (is_alpha(*p)) {
+      char *q = p++;
+      while (is_alnum(*p))
+        p++;
+      cur = new_token(TK_RESERVED, cur, q, p - q);
       continue;
     }
-    
+
     //Multi-letter punctuator
     if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") || startswith(p, ">=")) {
       cur = new_token(TK_RESERVED, cur, p, 2);
