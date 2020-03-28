@@ -90,7 +90,7 @@ static bool is_alnum(char c) {
 
 static char *starts_with_reserved(char *p) {
   //keywords
-  static char *kw[] = {"return", "if", "else"};
+  static char *kw[] = {"return", "if", "else", "while"};
 
   for (int i=0; i < sizeof(kw) / sizeof(*kw); i++) {
     int len = strlen(kw[i]);
@@ -138,7 +138,7 @@ Token *tokenize(void) {
       cur = new_token(TK_RESERVED, cur, q, p - q);
       continue;
     }
-    
+
     //Single-letter punctuator
     if (ispunct(*p)) {
       cur = new_token(TK_RESERVED, cur, p++, 1);
