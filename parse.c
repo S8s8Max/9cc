@@ -78,6 +78,10 @@ Function *program(void) {
   return prog;
 }
 
+static Node *read_expr_stmt(void) {
+  return new_unary(ND_EXPR_STMT, expr());
+}
+
 static Node *stmt(void) {
   if (consume("return")) {
     Node *node = new_unary(ND_RETURN, expr());
@@ -85,7 +89,18 @@ static Node *stmt(void) {
     return node;
   }
 
-  Node *node = new_unary(ND_EXPR_STMT, expr());
+  if (consume("if")) {
+    Node *node = new_node(ND_IF);
+    expect("(");
+    node->cond = expr();
+    expect(")");
+    node->then = stmt();
+    if (consume("else"))
+      node->els = stmt();
+    return node;
+  }
+
+  Node *node = read_expr_stmt();
   expect(";");
   return node;
 }
@@ -186,7 +201,7 @@ static Node *primary(void) {
       var = new_lvar(strndup(tok->str, tok->len));
     return new_var_node(var);
   }
-  
+
   return new_num(expect_number());
 }
 
