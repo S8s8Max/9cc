@@ -14,10 +14,7 @@ void error(char *fmt, ...) {
 
 //エラーを報告するための関数
 //printfと同じ引数をとる
-void error_at(char *loc, char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-
+static void verror_at(char *loc, char *fmt, va_list ap) {
   int pos = loc - user_input;
   fprintf(stderr, "%s\n", user_input);
   fprintf(stderr, "%*s", pos, "");//pos個の空白を出力
@@ -27,13 +24,26 @@ void error_at(char *loc, char *fmt, ...) {
   exit(1);
 }
 
+void error_at(char *loc, char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  verror_at(loc, fmt, ap);
+}
+
+void error_tok(Token *tok, char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  verror_at(tok->str, fmt, ap);
+}
+
 //次のトークンが期待している記号のとき、トークンを1つ読み
 //真を返す。それ以外の場合には偽を返す。
-bool consume(char *op) {
+Token *consume(char *op) {
   if (token->kind != TK_RESERVED ||  strlen(op) != token->len || memcmp(token->str, op, token->len))
-    return false;
+    return NULL;
+  Token *t = token;
   token = token->next;
-  return true;
+  return t;
 }
 
 Token *consume_ident(void) {
@@ -48,7 +58,7 @@ Token *consume_ident(void) {
 //それ以外の場合にはエラーを報告する。
 void expect(char *op) {
   if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str, op, token->len))
-    error_at(token->str, "expected \"%s\"", op);
+    error_tok(token, "expected \"%s\"", op);
   token = token->next;
 }
 
@@ -56,7 +66,7 @@ void expect(char *op) {
 //それ以外の場合にはエラーを報告。
 long expect_number(void) {
   if (token->kind != TK_NUM)
-    error(token->str, "数ではありません");
+    error_tok(token, "expected a number");
   long val = token->val;
   token = token->next;
   return val;
@@ -64,7 +74,7 @@ long expect_number(void) {
 
 char *expect_ident(void) {
   if (token->kind != TK_RESERVED)
-    error_at(token->str, "expected an identifier");
+    error_tok(token, "expected an identifier");
   char *s = strndup(token->str, token->len);
   token = token->next;
   return s;
@@ -161,13 +171,8 @@ Token *tokenize(void) {
       cur->len = p - q;
       continue;
     }
-    
-    if ('a' <= *p && *p <= 'z') {
-        cur = new_token(TK_IDENT, cur, p++,0);
-        cur->len = 1;
-    }
 
-    error_at(p, "トークナイズできません");
+    error_at(p, "invalid token");
   }
   
   new_token(TK_EOF, cur, p, 0);
