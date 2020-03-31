@@ -59,6 +59,7 @@ static Var *new_lvar(char *name) {
 
 static Function *function(void);
 static Node *stmt(void);
+static Node *stmt2(void);
 static Node *expr(void);
 static Node *assign(void);
 static Node *equality(void);
@@ -124,6 +125,12 @@ static Node *read_expr_stmt(void) {
 }
 
 static Node *stmt(void) {
+  Node *node = stmt2();
+  add_type(node);
+  return node;
+}
+
+static Node *stmt2(void) {
   Token *tok;
   if (tok = consume("return")) {
     Node *node = new_unary(ND_RETURN, expr(), tok);
@@ -233,22 +240,47 @@ static Node *relational(void) {
   }
 }
 
-//add = mul("+" mul | "-" mul)*
+static Node *new_add(Node *lhs, Node *rhs, Token *tok) {
+  add_type(lhs);
+  add_type(rhs);
+
+  if (is_integer(lhs->ty) && is_integer(rhs->ty))
+    return new_binary(ND_ADD, lhs, rhs, tok);
+  if (lhs->ty->base && is_integer(rhs->ty))
+    return new_binary(ND_PTR_ADD, lhs, rhs, tok);
+  if (is_integer(lhs->ty) && rhs->ty->base)
+    return new_binary(ND_PTR_ADD, rhs, lhs, tok);
+  error_tok(tok, "invalid operands");
+}
+
+static Node *new_sub(Node *lhs, Node *rhs, Token *tok) {
+  add_type(lhs);
+  add_type(rhs);
+
+  if (is_integer(lhs->ty) && is_integer(rhs->ty))
+    return new_binary(ND_SUB, lhs, rhs, tok);
+  if (lhs->ty->base && is_integer(rhs->ty))
+    return new_binary(ND_PTR_SUB, lhs, rhs, tok);
+  if (lhs->ty->base && rhs->ty->base)
+    return new_binary(ND_PTR_DIFF, lhs, rhs, tok);
+  error_tok(tok, "invalid operands");
+}
+
 static Node *add(void) {
   Node *node = mul();
   Token *tok;
 
   for (;;) {
     if (tok = consume("+"))
-      node = new_binary(ND_ADD, node, mul(), tok);
+      node = new_add(node, mul(), tok);
     else if (tok = consume("-"))
-      node = new_binary(ND_SUB, node, mul(), tok);
+      node = new_sub(node, mul(), tok);
     else
       return node;
   }
 }
 
-//mul = unary ("*" unary | "/" unary)*
+
 static Node *mul(void) {
   Node *node = unary();
   Token *tok;
