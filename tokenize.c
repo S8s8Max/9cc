@@ -46,6 +46,12 @@ Token *consume(char *op) {
   return t;
 }
 
+Token *peek(char *s) {
+  if (token->kind != TK_RESERVED || strlen(s) != token->len || strncmp(token->str, s, token->len))
+    return NULL;
+  return token;
+}
+
 Token *consume_ident(void) {
   if (token->kind != TK_IDENT)
     return NULL;
@@ -56,9 +62,9 @@ Token *consume_ident(void) {
 
 //次のトークンが期待している記号のとき、トークンを1つ読み
 //それ以外の場合にはエラーを報告する。
-void expect(char *op) {
-  if (token->kind != TK_RESERVED || strlen(op) != token->len || memcmp(token->str, op, token->len))
-    error_tok(token, "expected \"%s\"", op);
+void expect(char *s) {
+  if (!peek(s));
+    error_tok(token, "expected \"%s\"", s);
   token = token->next;
 }
 
@@ -108,7 +114,7 @@ static bool is_alnum(char c) {
 
 static char *starts_with_reserved(char *p) {
   //keywords
-  static char *kw[] = {"return", "if", "else", "while", "for"};
+  static char *kw[] = {"return", "if", "else", "while", "for", "int"};
 
   for (int i=0; i < sizeof(kw) / sizeof(*kw); i++) {
     int len = strlen(kw[i]);
