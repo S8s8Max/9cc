@@ -69,6 +69,7 @@ static Node *relational(void);
 static Node *add(void);
 static Node *mul(void);
 static Node *unary(void);
+static Node *postfix(void);
 static Node *primary(void);
 
 Function *program(void) {
@@ -355,7 +356,19 @@ static Node *unary(void) {
     return new_unary(ND_ADDR, unary(), tok);
   if (tok = consume("*"))
     return new_unary(ND_DEREF, unary(), tok);
-  return primary();
+  return postfix();
+}
+
+static Node *postfix(void) {
+  Node *node = primary();
+  Token *tok;
+
+  while (tok = consume("[")) {
+    Node *exp = new_add(node, expr(), tok);
+    expect("]");
+    node = new_unary(ND_DEREF, exp, tok);
+  }
+  return node;
 }
 
 static Node *func_args(void) {
