@@ -14,20 +14,24 @@ typedef struct Type Type;
 
 // Token
 typedef enum {
-  TK_RESERVED, //記号
-  TK_IDENT, //識別子
-  TK_NUM, //整数トークン
-  TK_EOF, //入力の終わりを表す
+  TK_RESERVED, //keywords or punctuators
+  TK_IDENT, //identifiers
+  TK_STR,  //string literal
+  TK_NUM, //integer literals
+  TK_EOF, //end-of-file markers
 } TokenKind;
 
 //Kinds of Token
 typedef struct Token Token;
 struct Token {
-  TokenKind kind; //トークンの型
-  Token *next;    //次の入力のトークン
-  int val;        //kindがTK_NUMの場合の値
-  char *str;      //トークン文字列
-  int len;        //トークンの長さ
+  TokenKind kind; //Token kind
+  Token *next;    //Next token
+  int val;        //if kind is TK_NUM, its value
+  char *str;      //Token string
+  int len;        //Token length
+
+  char *contents; //string literal contents including terminating '\0'
+  char cont_len;  //string literal length
 };
 
 void error(char *fmt, ...);
@@ -57,6 +61,9 @@ struct Var {
   bool is_local; // local or global
 
   int offset; // offset from RBP
+
+  char *contents;
+  int cont_len;
 };
 
 typedef struct VarList VarList;
