@@ -95,6 +95,7 @@ typedef enum {
   ND_BLOCK,//{・・・}
   ND_FUNCALL,//Function call
   ND_EXPR_STMT,//Epression statement
+  ND_STMT_EXPR,//statement expression
   ND_VAR,// variable
   ND_NUM, // integer
   ND_NULL,//Empty statement
@@ -117,7 +118,7 @@ struct Node {
   Node *els;
   Node *init;
   Node *inc;
-  // Block
+  // Block or statement expressions
   Node *body;
   //Function call
   char *funcname;
