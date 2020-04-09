@@ -201,9 +201,26 @@ Token *tokenize(void) {
   Token *cur = &head;
 
   while (*p) {
-    //空文字をスキップ
+    //skip empty
     if (isspace(*p)) {
       p++;
+      continue;
+    }
+
+    //skip line comments.
+    if (startswith(p, "//")) {
+      p += 2;
+      while (*p != '\n')
+        p++;
+      continue;
+    }
+
+    //skip block comments.
+    if (startswith(p, "*/")) {
+      char *q = strstr(p + 2, "*/");
+      if (!p)
+        error_at(p, "unclosed block comment");
+      p = q + 2;
       continue;
     }
 
