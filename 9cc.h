@@ -10,6 +10,7 @@
 #include <string.h>
 
 typedef struct Type Type;
+typedef struct Member Member;
 //
 // tokenize.c
 //
@@ -89,6 +90,7 @@ typedef enum {
   ND_LT,  // <
   ND_LE,  // <=
   ND_ASSIGN,// =
+  ND_MEMBER,//. (struct member access)
   ND_ADDR,//unary &
   ND_DEREF,//unary *
   ND_RETURN, // "return"
@@ -123,6 +125,8 @@ struct Node {
   Node *inc;
   // Block or statement expressions
   Node *body;
+  //struct member access
+  Member *member;
   //Function call
   char *funcname;
   Node *args;
@@ -157,6 +161,7 @@ typedef enum {
   TY_INT,
   TY_PTR,
   TY_ARRAY,
+  TY_STRUCT,
 } TypeKind;
 
 struct Type {
@@ -164,6 +169,15 @@ struct Type {
   int size;
   Type *base;
   int array_len;
+  Member *members;
+};
+
+//Struct members
+struct Member {
+  Member *next;
+  Type *ty;
+  char *name;
+  int offset;
 };
 
 extern Type *char_type;
