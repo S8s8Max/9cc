@@ -35,6 +35,7 @@ static void verror_at(char *loc, char *fmt, va_list ap) {
   fprintf(stderr, "%.*s\n", (int)(end - line), line);
 
   //Show the error message.
+  int pos = loc - line + indent;
   fprintf(stderr, "%*s", pos, "");//pos個の空白を出力
   fprintf(stderr, "^ ");
   vfprintf(stderr, fmt, ap);
