@@ -574,6 +574,13 @@ static Node *postfix(void) {
       continue;
     }
 
+    if (tok = consume("->")) {
+      // x->y is short for (*x).y
+      node = new_unary(ND_DEREF, node, tok);
+      node = struct_ref(node);
+      continue;
+    }
+
     return node;
   }
 }
