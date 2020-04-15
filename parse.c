@@ -185,12 +185,17 @@ Program *program(void) {
 
   while (!at_eof()) {
     if (is_function()) {
-      cur->next = function();
+      Function *fn = function();
+      if (!fn)
+        continue;
+      cur->next = fn;
       cur = cur->next;
-    } else {
-      global_var();
+      continue;
     }
+
+    global_var();
   }
+
   Program *prog = calloc(1, sizeof(Program));
   prog->globals = globals;
   prog->fns = head.next;
@@ -344,10 +349,15 @@ static Function *function(void) {
 
   Scope *sc = enter_scope();
   fn->params = read_func_params();
-  expect("{");
+
+  if (consume(";")) {
+    leave_scope(sc);
+    return NULL;
+  }
 
   Node head = {};
   Node *cur = &head;
+  expect("{");
 
   while (!consume("}")) {
     cur->next = stmt();
@@ -475,7 +485,7 @@ static Node *stmt2(void) {
     ty = declarator(ty, &name);
     ty = type_suffix(ty);
     expect(";");
-    
+
     push_scope(name)->type_def = ty;
     return new_node(ND_NULL, tok);
   }
