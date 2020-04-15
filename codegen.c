@@ -1,6 +1,7 @@
 #include "9cc.h"
 
 static char *argreg1[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+static char *argreg4[] = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
 static char *argreg8[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 static int labelseq = 1;
@@ -42,10 +43,16 @@ static void gen_lval(Node *node) {
 
 static void load(Type *ty) {
   printf("  pop rax\n");
-  if (ty->size == 1)
+
+  if (ty->size == 1) {
     printf("  movsx rax, byte ptr [rax]\n");
-  else
+  } else if (ty->size == 4) {
+    printf("  movsxd rax, dword ptr [rax]\n");
+  } else {
+    assert(ty->size == 8);
     printf("  mov rax, [rax]\n");
+  }
+  
   printf("  push rax\n");
 }
 
@@ -53,11 +60,15 @@ static void store(Type *ty) {
   printf("  pop rdi\n");
   printf("  pop rax\n");
 
-  if (ty->size == 1)
+  if (ty->size == 1) {
     printf("  mov [rax], dil\n");
-  else
+  } else if (ty->size == 4) {
+    printf("  mov [rax], edi\n");
+  } else {
+    assert(ty->size == 8);
     printf("  mov [rax], rdi\n");
-  
+  }
+
   printf("  push rdi\n");
 }
 
@@ -258,7 +269,12 @@ static void emit_data(Program *prog) {
 static void load_arg(Var *var, int idx) {
   int sz = var->ty->size;
   if (sz == 1) {
-    printf("  mov [rbp-%d], %s\n", var->offset, argreg8[idx]);
+    printf("  mov [rbp-%d], %s\n", var->offset, argreg1[idx]);
+  } else if (sz == 4) {
+    printf("  mov [rbp-%d], %s\n", var->offset, argreg4[idx]);
+  } else {
+    assert(sz == 8);
+    printf("  mov [rdp-%d], %s\n", var->offset, argreg8[idx]);
   }
 }
 
