@@ -94,6 +94,8 @@ void add_type(Node *node) {
         if (node->lhs->ty->base)
             error_tok(node->tok, "invalid pointer dereference");
         node->ty = node->lhs->ty->base;
+        if (node->ty->kind == TY_VOID)
+            error_tok(node->tok, "dereferencing a void pointer");
         return;
     case ND_STMT_EXPR: {
         Node *last = node->body;
