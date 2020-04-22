@@ -208,7 +208,8 @@ static Type *basetype(void) {
   if (!is_typename(token))
     error_tok(token, "typename expected");
   
-  Type *ty;
+  if (consume("void"))
+    return void_type;
   if (consume("char"))
     return char_type;
   else if (consume("short"))
@@ -394,8 +395,11 @@ static Node *declaration(void) {
   char *name = NULL;
   ty = declarator(ty, &name);
   ty = type_suffix(ty);
-  Var *var = new_lvar(name, ty);
 
+  if (ty->kind == TY_VOID)
+    error_tok(tok, "variable declared void");
+  
+  Var *var = new_lvar(name, ty);
   if (consume(";"))
     return new_node(ND_NULL, tok);
   
@@ -413,7 +417,7 @@ static Node *read_expr_stmt(void) {
 }
 
 static bool is_typename(void) {
-  return peek("char") || peek("short") || peek("int") || peek("long") || peek("struct") || find_typedef(token);
+  return peek("void") || peek("char") || peek("short") || peek("int") || peek("long") || peek("struct") || find_typedef(token);
 }
 
 static Node *stmt(void) {
