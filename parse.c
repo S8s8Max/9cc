@@ -218,12 +218,13 @@ static Type *basetype(void) {
     return short_type;
   else if (consume("int"))
     return int_type;
-  else if (consume("long"))
+  if (consume("long")) {
+    consume("long");
     return long_type;
-  else if (consume("struct"))
+  }
+  if (consume("struct"))
     return struct_decl();
-  else
-    return find_var(consume_ident())->type_def;
+  return find_var(consume_ident())->type_def;
 }
 
 static Type *declarator(Type *ty, char **name) {
