@@ -104,6 +104,7 @@ typedef enum {
   ND_STMT_EXPR,//statement expression
   ND_VAR,// variable
   ND_NUM, // integer
+  ND_CAST,//type cast
   ND_NULL,//Empty statement
 } NodeKind;
 
