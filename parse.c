@@ -827,6 +827,10 @@ static Node *unary(void) {
     return new_unary(ND_ADDR, cast(), tok);
   if (tok = consume("*"))
     return new_unary(ND_DEREF, cast(), tok);
+  if (tok = consume("++"))
+    return new_unary(ND_PRE_INC, unary(), tok);
+  if (tok = consume("--"))
+    return new_unary(ND_PRE_DEC, unary(), tok);
   return postfix();
 }
 
@@ -873,6 +877,16 @@ static Node *postfix(void) {
       // x->y is short for (*x).y
       node = new_unary(ND_DEREF, node, tok);
       node = struct_ref(node);
+      continue;
+    }
+
+    if (tok = consume("++")) {
+      node = new_unary(ND_POST_INC, node, tok);
+      continue;
+    }
+
+    if (tok = consume("--")) {
+      node = new_unary(ND_POST_DEC, node, tok);
       continue;
     }
 
