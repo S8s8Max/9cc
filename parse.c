@@ -732,7 +732,7 @@ static Node *assign(void) {
     else
       return new_binary(ND_SUB_EQ, node, assign(), tok);
   }
-  
+
   return node;
 }
 
@@ -851,6 +851,8 @@ static Node *unary(void) {
     return new_unary(ND_ADDR, cast(), tok);
   if (tok = consume("*"))
     return new_unary(ND_DEREF, cast(), tok);
+  if (tok = consume("!"))
+    return new_unary(ND_NOT, cast(), tok);
   if (tok = consume("++"))
     return new_unary(ND_PRE_INC, unary(), tok);
   if (tok = consume("--"))
