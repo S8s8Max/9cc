@@ -477,7 +477,7 @@ static Member *struct_member(void) {
   ty = type_suffix(ty);
   expect(";");
 
-  Member *mem = clloc(1, sizeof(Member));
+  Member *mem = calloc(1, sizeof(Member));
   mem->name = name;
   mem->ty = ty;
   return mem;
@@ -695,7 +695,13 @@ static Node *stmt2(void) {
 }
 
 static Node *expr(void) {
-  return assign();
+  Node *node = assign();
+  Token *tok;
+  while (tok = consume(",")) {
+    node = new_unary(ND_EXPR_STMT, node, node->tok);
+    node = new_binary(ND_COMMA, node, assign(), tok);
+  }
+  return node;
 }
 
 static Node *assign(void) {
@@ -731,7 +737,7 @@ static Node *relational(void) {
       node = new_binary(ND_LE, node, add(), tok);
     else if (tok = consume(">"))
       node = new_binary(ND_LT, add(), node, tok);
-    else if (tok = onsume(">="))
+    else if (tok = consume(">="))
       node = new_binary(ND_LE, add(), node, tok);
     else
       return node;

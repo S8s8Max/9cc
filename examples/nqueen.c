@@ -54,4 +54,3 @@ int main() {
     solve(board, 0);
     return 0;
 }
-
