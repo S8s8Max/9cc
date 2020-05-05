@@ -174,6 +174,8 @@ static Node *stmt(void);
 static Node *stmt2(void);
 static Node *expr(void);
 static Node *assign(void);
+static Node *logor(void);
+static Node *logand(void);
 static Node *bitand(void);
 static Node *bitor(void);
 static Node *bitxor(void);
@@ -708,7 +710,7 @@ static Node *expr(void) {
 }
 
 static Node *assign(void) {
-  Node *node = bitor();
+  Node *node = logor();
   Token *tok;
 
   if (tok = consume("="))
@@ -736,6 +738,22 @@ static Node *assign(void) {
       return new_binary(ND_SUB_EQ, node, assign(), tok);
   }
 
+  return node;
+}
+
+static Node *logor(void) {
+  Node *node = logand();
+  Token *tok;
+  while (tok = consume("||"))
+    node = new_binary(ND_LOGOR, node, logand(), tok);
+  return node;
+}
+
+static Node *logand(void) {
+  Node *node = bitor();
+  Token *tok;
+  while (tok = consume("&&"))
+    node = new_binary(ND_LOGAND, node, bitor(), tok);
   return node;
 }
 
