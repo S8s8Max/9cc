@@ -360,10 +360,23 @@ static Type *abstract_declarator(Type *ty) {
 static Type *type_suffix(Type *ty) {
   if (!consume("["))
     return ty;
-  int sz = expect_number();
-  expect("]");
+  
+  int sz = 0;
+  bool is_incomplete = true;
+  if (!comsume("]")) {
+    sz = expect_number();
+    is_incomplete = false;
+    expect("]");
+  }
+
+  Token *tok = token;
   ty = type_suffix(ty);
-  return array_of(ty, sz);
+  if (ty->is_incomplete)
+    error_tok(tok, "incomplete element type");
+  
+  ty = array_of(ty, sz);
+  ty->is_incomplete = is_incomplete;
+  return ty;
 }
 
 // type-name = basetype abstract-declarator type-suffix
@@ -412,6 +425,9 @@ static Type *struct_decl(void) {
   //Assign offsets within the struct to members.
   int offset = 0;
   for (Member *mem = ty->members; mem; mem = mem->next) {
+    if (mem->ty->is_incomplete)
+      error_tok(mem->tok, "incomplete struct member");
+    
     offset = align_to(offset, mem->ty->align);
     mem->offset = offset;
     offset += mem->ty->size;
@@ -477,6 +493,7 @@ static Type *enum_specifier(void) {
 
 static Member *struct_member(void) {
   Type *ty = basetype(NULL);
+  Token *tok = token;
   char *name = NULL;
   ty = declarator(ty, &name);
   ty = type_suffix(ty);
@@ -485,6 +502,7 @@ static Member *struct_member(void) {
   Member *mem = calloc(1, sizeof(Member));
   mem->name = name;
   mem->ty = ty;
+  mem->tok = tok;
   return mem;
 }
 
@@ -559,23 +577,28 @@ static void global_var(void) {
   StorageClass sclass;
   Type *ty = basetype(&sclass);
   char *name = NULL;
+  Token *tok = token;
   ty = declarator(ty, &name);
   ty = type_suffix(ty);
   expect(";");
 
-  if (sclass == TYPEDEF)
+  if (sclass == TYPEDEF) {
     push_scope(name)->type_def = ty;
-  else 
+  } else {
+    if (ty->is_incomplete)
+      error_tok(tok, "incomplete type");
     new_gvar(name, ty, true);
+  }
 }
 
 static Node *declaration(void) {
   Token *tok = token;
   StorageClass sclass;
   Type *ty = basetype(&sclass);
-  if (consume(";"))
+  if (tok = consume(";"))
     return new_node(ND_NULL, tok);
   
+  tok = token;
   char *name = NULL;
   ty = declarator(ty, &name);
   ty = type_suffix(ty);
@@ -590,6 +613,9 @@ static Node *declaration(void) {
     error_tok(tok, "variable declared void");
   
   Var *var = new_lvar(name, ty);
+  if (ty->is_incomplete)
+    error_tok(tok, "incomplete type");
+
   if (consume(";"))
     return new_node(ND_NULL, tok);
   
@@ -1017,6 +1043,8 @@ static Node *primary(void) {
     if (consume("(")) {
       if (is_typename()) {
         Type *ty = type_name();
+        if (ty->is_incomplete)
+          error_tok(tok, "incomplete type");
         expect(")");
         return new_num(ty->size, tok);
       }
@@ -1025,6 +1053,8 @@ static Node *primary(void) {
 
     Node *node = unary();
     add_type(node);
+    if (node->ty->is_incomplete)
+      error_tok(node->tok, "incomplete type");
     return new_num(node->ty->size, tok);
   }
 
