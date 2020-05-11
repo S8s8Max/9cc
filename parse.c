@@ -369,7 +369,7 @@ static Type *type_suffix(Type *ty) {
   
   int sz = 0;
   bool is_incomplete = true;
-  if (!comsume("]")) {
+  if (!consume("]")) {
     sz = expect_number();
     is_incomplete = false;
     expect("]");
@@ -759,6 +759,11 @@ static Node *stmt2(void) {
   if (tok = consume("break")) {
     expect(";");
     return new_node(ND_BREAK, tok);
+  }
+
+  if (tok = consume("continue")) {
+    expect(";");
+    return new_node(ND_CONTINUE, tok);
   }
 
   if (is_typename())

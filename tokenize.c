@@ -147,7 +147,7 @@ static char *starts_with_reserved(char *p) {
   static char *kw[] = {"return", "if", "else", "while", "for", 
                        "int", "char", "sizeof", "struct", "typedef", 
                        "long", "short", "void", "_Bool", "enum",
-                       "static", "break"};
+                       "static", "break", "continue"};
 
   for (int i=0; i < sizeof(kw) / sizeof(*kw); i++) {
     int len = strlen(kw[i]);
@@ -237,7 +237,7 @@ static Token *read_int_literal(Token *cur, char *start) {
   char *p = start;
 
   int base;
-  if (!strncasecm(p, "0x", 2) && is_alnum(p[2])) {
+  if (!strncasecmp(p, "0x", 2) && is_alnum(p[2])) {
     p += 2;
     base = 16;
   } else if (!strncasecmp(p, "0b", 2) && is_alnum(p[2])) {
