@@ -505,20 +505,26 @@ static void gen(Node *node) {
   gen_binary(node);
 }
 
-static void emit_data(Program *prog) {
+static emit_data(Program *prog) {
   printf(".data\n");
 
   for (VarList *vl = prog->globals; vl; vl = vl->next) {
     Var *var = vl->var;
     printf("%s:\n", var->name);
 
-    if (!var->contents) {
+    if (!var->initializer) {
       printf("  .zero %d\n", var->ty->size);
       continue;
     }
 
-    for (int i=0; i < var->cont_len; i++)
-      printf("  .byte %d\n", var->contents[i]);
+    for (Initializer *init = var->initializer; init; init = init->next) {
+      if (init->label)
+        printf("  .quad %s\n", init->label);
+      else if (init->sz == 1)
+        printf("  .byte %ld\n", init->val);
+      else
+        printf("  .%dbyte %ld\n", init->sz, init->val);
+    }
   }
 }
 
