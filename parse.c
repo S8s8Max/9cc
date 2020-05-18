@@ -671,23 +671,28 @@ static Initializer *emit_struct_padding(Initializer *cur, Type *parent, Member *
 
 // gvar-initializer2 = assign
 //                  | "{" (gvar-initializer2 ("," gvar-initializer2)* "," ?)? "}"
-static Initializer *gvar_initalizer2(Initializer *cur, Type *ty) {
+static Initializer *gvar_initializer2(Initializer *cur, Type *ty) {
   Token *tok = token;
 
   if (ty->kind == TY_ARRAY) {
-    expect("{");
+    bool open = consume("{");
     int i = 0;
+    int limit = ty->is_incomplete ? INT_MAX : ty->array_len;
 
     if (!peek("}")) {
       do {
-        cur = gvar_initalizer2(cur, ty->base);
+        cur = gvar_initializer2(cur, ty->base);
         i++;
-      } while (!peek_end() && consume(","));
+      } while (i < limit && !peek_end() && consume(","));
     }
-    expect_end();
+  
+    if (open)
+      expect_end();
 
     // Set excess array elements to zero.
-    if (i < ty->array_len) {
+    cur = new_init_zero(cur, ty->base->size * (ty->array_len - i));
+
+    if (ty->is_incomplete) {
       ty->size = ty->base->size * i;
       ty->array_len = i;
       ty->is_incomplete = false;
@@ -696,24 +701,30 @@ static Initializer *gvar_initalizer2(Initializer *cur, Type *ty) {
   }
 
   if (ty->kind == TY_STRUCT) {
-    expect("{");
+    bool open = consume("{");
     Member *mem = ty->members;
 
     if (!peek("}")) {
       do {
-        cur = gvar_initalizer2(cur, mem->ty);
+        cur = gvar_initializer2(cur, mem->ty);
         cur = emit_struct_padding(cur, ty, mem);
         mem = mem->next;
-      } while (!peek_end() && consume(","));
+      } while (mem && !peek_end() && consume(","));
     }
-    expect_end();
+    
+    if (open)
+      expect_end();
 
     // Set excess struct elements to zero.
     if (mem)
       cur = new_init_zero(cur, ty->size - mem->offset);
     return cur;
   }
+
+  bool open = consume("{");
   Node *expr = conditional();
+  if (open)
+    expect_end();
 
   if (expr->kind == ND_ADDR) {
     if (expr->lhs->kind != ND_VAR)
@@ -729,7 +740,7 @@ static Initializer *gvar_initalizer2(Initializer *cur, Type *ty) {
 
 static Initializer *gvar_initializer(Type *ty) {
   Initializer head = {};
-  gvar_initalizer2(&head, ty);
+  gvar_initializer2(&head, ty);
   return head.next;    
 }
 
@@ -861,16 +872,19 @@ static Node *lvar_initializer2(Node *cur, Var *var, Type *ty, Designator *desg) 
   }
 
   if (ty->kind == TY_ARRAY) {
-    expect("{");
+    bool open = consume("{");
     int i = 0;
+    int limit = ty->is_incomplete ? INT_MAX : ty->array_len;
 
     if (!peek("}")) {
       do {
         Designator desg2 = {desg, i++};
         cur = lvar_initializer2(cur, var, ty->base, &desg2);
-      } while (!peek_end() && consume(","));
+      } while (i < limit && !peek_end() && consume(","));
     }
-    expect_end();
+    
+    if(open)
+      expect_end();
 
     // Set excess array elements to zero.
     while (i < ty->array_len) {
@@ -887,7 +901,7 @@ static Node *lvar_initializer2(Node *cur, Var *var, Type *ty, Designator *desg) 
   }
 
   if (ty->kind == TY_STRUCT) {
-    expect("{");
+    bool open = consume("{");
     Member *mem = ty->members;
 
     if (!peek("}")) {
@@ -895,9 +909,10 @@ static Node *lvar_initializer2(Node *cur, Var *var, Type *ty, Designator *desg) 
         Designator desg2 = {desg, 0, mem};
         cur = lvar_initializer2(cur, var, mem->ty, &desg2);
         mem = mem->next;
-      } while (!peek_end() && consume(","));
+      } while (mem && !peek_end() && consume(","));
     }
-    expect_end();
+    if (open)
+      expect_end();
 
     // Set excess struct elements to zero.
     for (; mem; mem = mem->next) {
@@ -906,7 +921,11 @@ static Node *lvar_initializer2(Node *cur, Var *var, Type *ty, Designator *desg) 
     }
     return cur;
   }
+
+  bool open = consume("{");
   cur->next = new_desg_node(var, desg, assign());
+  if (open)
+    expect_end();
   return cur->next;
 }
 
