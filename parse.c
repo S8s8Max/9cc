@@ -659,7 +659,7 @@ static Initializer *gvar_init_string(char *p, int len) {
   Initializer head = {};
   Initializer *cur = &head;
   for (int i = 0; i < len; ++i) 
-    cur = neW_init_val(cur, 1, p[i]);
+    cur = new_init_val(cur, 1, p[i]);
   return head.next;
 }
 
@@ -671,7 +671,7 @@ static Initializer *emit_struct_padding(Initializer *cur, Type *parent, Member *
 
 static void skip_excess_elements2(void) {
   for (;;) {
-    if (cousume("{"))
+    if (consume("{"))
       skip_excess_elements2();
     else
       assign();
@@ -691,6 +691,22 @@ static void skip_excess_elements(void) {
 //                   | "{" (gvar-initializer2 ("," gvar-initializer2)* "," ?)? "}"
 static Initializer *gvar_initializer2(Initializer *cur, Type *ty) {
   Token *tok = token;
+
+  if (ty->kind == TY_ARRAY && ty->base->kind == TY_CHAR && token->kind == TK_STR) {
+    token = token->next;
+
+    if (ty->is_incomplete) {
+      ty->size = tok->cont_len;
+      ty->array_len = tok->cont_len;
+      ty->is_incomplete = false;
+    }
+
+    int len = (ty->array_len < tok->cont_len) ? ty->array_len : tok->cont_len;
+
+    for (int i = 0; i < len; ++i)
+      cur = new_init_val(cur, 1, tok->contents[i]);
+    return new_init_zero(cur, ty->array_len - len);
+  }
 
   if (ty->kind == TY_ARRAY) {
     bool open = consume("{");
