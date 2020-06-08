@@ -184,7 +184,7 @@ struct Node {
 
 // Global variables initializer. Global variables can be initialized
 // either by a constant expression or a pointer to another global
-// variables.
+// variables with an addend.
 struct Initializer {
   Initializer *next;
 
@@ -194,6 +194,7 @@ struct Initializer {
 
   // Reference to another global variables
   char *label;
+  long addend;
 };
 
 typedef struct Function Function;
